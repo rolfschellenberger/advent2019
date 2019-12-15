@@ -31,6 +31,14 @@ public class ReadAction extends Action {
                 return new InputAction(actionType, data, parameterModes);
             case OUTPUT:
                 return new OutputAction(actionType, data, parameterModes);
+            case JUMP_IF_TRUE:
+                return new JumpIfTrueAction(actionType, data, parameterModes);
+            case JUMP_IF_FALSE:
+                return new JumpIfFalseAction(actionType, data, parameterModes);
+            case LESS_THAN:
+                return new LessThanAction(actionType, data, parameterModes);
+            case EQUALS:
+                return new EqualsAction(actionType, data, parameterModes);
             case DONE:
                 return new DoneAction(actionType, data, parameterModes);
             case READ:

@@ -14,6 +14,10 @@ public class IntArray {
         return data;
     }
 
+    public void setIndex(final int index) {
+        this.index = index;
+    }
+
     public int getOutput() {
         return output;
     }
