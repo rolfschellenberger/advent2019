@@ -1,0 +1,1 @@
+These are my solutions to the exercises from https://adventofcode.com/2019
