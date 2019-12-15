@@ -1,0 +1,20 @@
+*.class
+*.iml
+log/
+target/
+.project
+.settings/
+.idea/
+.DS_Store
+# Docker persistent data
+docker-data/
+cache
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.ear
+!lib/*.jar
