@@ -4,11 +4,11 @@ public class IntArray {
 
     private final int[] data;
     private int index = 0;
-    private final int input[];
+    private final int[] input;
     private int inputIndex = 0;
     private int output = -1;
 
-    public IntArray(final int[] data, final int input[]) {
+    public IntArray(final int[] data, final int[] input) {
         this.data = data;
         this.input = input;
     }
@@ -25,7 +25,7 @@ public class IntArray {
         return input[inputIndex++];
     }
 
-    public int getOutput() {
+    int getOutput() {
         return output;
     }
 

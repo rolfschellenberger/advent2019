@@ -20,7 +20,7 @@ public class IntCode {
         while (!action.isEnd()) {
             action = action.run();
         }
-        System.out.println("Day7 - " + name + ": " + action.getData().getOutput());
+//        System.out.println("Day7 - " + name + ": " + action.getData().getOutput());
     }
 
     public int getOutput() {

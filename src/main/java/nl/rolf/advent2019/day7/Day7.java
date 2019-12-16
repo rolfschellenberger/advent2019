@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 @Component
@@ -14,19 +15,12 @@ public class Day7 {
 
     @Scheduled(fixedDelay = 5000)
     public void run() throws IOException {
-        final List<int[]> options = new ArrayList<>();
-        final int[] start = new int[]{0, 1, 2, 3, 4};
-        options.addAll(get(start, 0));
-        options.add(new int[]{0, 1, 2, 3, 4});
-        options.add(new int[]{0, 1, 2, 4, 3});
-        options.add(new int[]{0, 1, 4, 2, 3});
-        options.add(new int[]{0, 4, 1, 2, 3});
-        options.add(new int[]{4, 0, 1, 2, 3});
-        // TODO: etc
+        final List<Integer[]> options = generate(new int[]{0, 1, 2, 3, 4});
 
         int highestOutput = 0;
+        Integer[] highestOption = new Integer[0];
         int input = 0;
-        for (final int[] option : options) {
+        for (final Integer[] option : options) {
             for (int i = 0; i < option.length; i++) {
                 final IntCode step = createIntCode(String.valueOf(i), new int[]{option[i], input});
                 step.run();
@@ -34,23 +28,36 @@ public class Day7 {
             }
             if (input > highestOutput) {
                 highestOutput = input;
+                highestOption = option;
             }
         }
-        System.out.println("Day7.1: " + highestOutput);
+        System.out.println("Day7.1: " + highestOutput + " " + Arrays.asList(highestOption));
     }
 
-    private List<int[]> get(final int[] input, final int index) {
-        final List<int[]> result = new ArrayList<>();
-        for (int i = 0; i < input.length; i++) {
-            final int[] copy = Arrays.copyOf(input, input.length);
-            final int original = copy[index];
+    private List<Integer[]> generate(final int[] options) {
+        return generate(new Integer[options.length], options, 0);
+    }
 
+    private List<Integer[]> generate(final Integer[] array, final int[] options, final int optionIndex) {
+        // No more options.
+        if (optionIndex >= options.length) {
+            return Collections.singletonList(array);
+        }
+
+        final List<Integer[]> result = new ArrayList<>();
+        final int option = options[optionIndex];
+        for (int i = 0; i < array.length; i++) {
+            if (array[i] == null) {
+                final Integer[] copy = Arrays.copyOf(array, array.length);
+                copy[i] = option;
+                result.addAll(generate(copy, options, optionIndex + 1));
+            }
         }
         return result;
     }
 
     private IntCode createIntCode(final String name, final int[] input) throws IOException {
-        final int[] data = FileReader.readArray("/day7.txt");
+        final int[] data = FileReader.readArray("/day7test.txt");
         final IntArray intArray = new IntArray(data, input);
         return new IntCode(name, intArray);
     }
