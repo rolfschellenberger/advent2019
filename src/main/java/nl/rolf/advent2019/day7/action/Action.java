@@ -22,7 +22,7 @@ public abstract class Action {
     }
 
     public boolean isEnd() {
-        return actionType == ActionType.DONE;
+        return actionType == ActionType.DONE || actionType == ActionType.OUTPUT;
     }
 
     public abstract Action run();

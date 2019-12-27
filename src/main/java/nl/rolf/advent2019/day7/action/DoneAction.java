@@ -13,6 +13,6 @@ public class DoneAction extends Action {
 
     @Override
     public Action run() {
-        return null;
+        return new DoneAction(ActionType.DONE, data, parameterModes);
     }
 }

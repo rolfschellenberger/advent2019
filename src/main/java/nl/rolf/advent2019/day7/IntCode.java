@@ -20,6 +20,9 @@ public class IntCode {
         while (!action.isEnd()) {
             action = action.run();
         }
+
+        // We always run the last action before exiting
+        action = action.run();
 //        System.out.println("Day7 - " + name + ": " + action.getData().getOutput());
     }
 
