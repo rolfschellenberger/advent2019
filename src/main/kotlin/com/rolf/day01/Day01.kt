@@ -8,11 +8,26 @@ fun main() {
 
 class Day01 : Day() {
     override fun solve1(lines: List<String>) {
-        TODO("Not yet implemented")
+        val modules = lines.map { it.toInt() }
+        println(modules.map { calculateFuel(it) }.sum())
     }
 
     override fun solve2(lines: List<String>) {
-        TODO("Not yet implemented")
+        val modules = lines.map { it.toInt() }
+        println(modules.map { calculateFuel2(it) }.sum())
     }
 
+    private fun calculateFuel(mass: Int): Int {
+        return maxOf(0, mass / 3 - 2)
+    }
+
+    private fun calculateFuel2(mass: Int): Int {
+        var sum = 0
+        var fuel = calculateFuel(mass)
+        while (fuel > 0) {
+            sum += fuel
+            fuel = calculateFuel(fuel)
+        }
+        return sum
+    }
 }
