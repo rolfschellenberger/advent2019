@@ -1,14 +1,20 @@
 package com.rolf.util
 
+import java.util.concurrent.LinkedBlockingQueue
+
 class IntcodeState(
     val memory: MutableList<Int>,
-    val input: MutableList<Int> = mutableListOf(),
-    val output: MutableList<Int> = mutableListOf(),
+    val input: LinkedBlockingQueue<Int> = LinkedBlockingQueue(mutableListOf()),
+    val output: LinkedBlockingQueue<Int> = LinkedBlockingQueue(mutableListOf()),
     var pointer: Int = 0,
     var stop: Boolean = false
-) {
+) : Runnable {
     private val initialMemory: List<Int> = memory.map { it }
     private val initialInput: List<Int> = input.map { it }
+
+    override fun run() {
+        execute()
+    }
 
     fun reset() {
         memory.clear()
@@ -66,7 +72,7 @@ class IntcodeState(
     }
 
     fun read(): Int {
-        return input.removeFirst()
+        return input.take()
     }
 
     fun write(value: Int) {
