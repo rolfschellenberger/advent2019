@@ -3,7 +3,7 @@ package com.rolf.day07
 import com.rolf.Day
 import com.rolf.util.IntcodeState
 import com.rolf.util.getPermutations
-import com.rolf.util.splitLine
+import com.rolf.util.readMemory
 import java.lang.Thread.sleep
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
@@ -14,10 +14,10 @@ fun main() {
 
 class Day07 : Day() {
     override fun solve1(lines: List<String>) {
-        val memory = splitLine(lines.first(), ",").map { it.toInt() }
-        var maxOutput = Int.MIN_VALUE
+        val memory = readMemory(lines.first())
+        var maxOutput = Long.MIN_VALUE
 
-        fun onNextPermutation(combination: List<Int>) {
+        fun onNextPermutation(combination: List<Long>) {
             val options = combination.toMutableList()
             val executor = Executors.newFixedThreadPool(combination.size)
             var input = LinkedBlockingQueue(listOf(options.removeFirst(), 0))
@@ -36,20 +36,20 @@ class Day07 : Day() {
             }
             maxOutput = maxOf(maxOutput, input.take(input.size).last())
         }
-        getPermutations(listOf(0, 1, 2, 3, 4), ::onNextPermutation)
+        getPermutations(listOf(0L, 1L, 2L, 3L, 4L), ::onNextPermutation)
         println(maxOutput)
     }
 
     override fun solve2(lines: List<String>) {
-        val memory = splitLine(lines.first(), ",").map { it.toInt() }
-        var maxOutput = Int.MIN_VALUE
+        val memory = readMemory(lines.first())
+        var maxOutput = Long.MIN_VALUE
 
-        fun onNextPermutation(combination: List<Int>) {
+        fun onNextPermutation(combination: List<Long>) {
             val options = combination.toMutableList()
             val executor = Executors.newFixedThreadPool(combination.size)
 
             // Create all input/output queues
-            val inputs = mutableListOf<LinkedBlockingQueue<Int>>()
+            val inputs = mutableListOf<LinkedBlockingQueue<Long>>()
             for (i in combination.indices) {
                 inputs.add(LinkedBlockingQueue(listOf(options.removeFirst())))
             }
@@ -70,7 +70,7 @@ class Day07 : Day() {
             }
             maxOutput = maxOf(maxOutput, inputs.first().last())
         }
-        getPermutations(listOf(5, 6, 7, 8, 9), ::onNextPermutation)
+        getPermutations(listOf(5L, 6L, 7L, 8L, 9L), ::onNextPermutation)
         println(maxOutput)
     }
 }

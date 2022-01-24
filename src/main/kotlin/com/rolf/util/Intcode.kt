@@ -2,15 +2,22 @@ package com.rolf.util
 
 import java.util.concurrent.LinkedBlockingQueue
 
+fun readMemory(line: String, capacity: Int = 0): MutableList<Long> {
+    val memory = LongArray(capacity) { 0 }.toMutableList()
+    memory.addAll(0, splitLine(line, ",").map { it.toLong() })
+    return memory
+}
+
 class IntcodeState(
-    val memory: MutableList<Int>,
-    val input: LinkedBlockingQueue<Int> = LinkedBlockingQueue(mutableListOf()),
-    val output: LinkedBlockingQueue<Int> = LinkedBlockingQueue(mutableListOf()),
+    private val memory: MutableList<Long>,
+    val input: LinkedBlockingQueue<Long> = LinkedBlockingQueue(mutableListOf()),
+    val output: LinkedBlockingQueue<Long> = LinkedBlockingQueue(mutableListOf()),
     var pointer: Int = 0,
+    var relativeBase: Int = 0,
     var stop: Boolean = false
 ) : Runnable {
-    private val initialMemory: List<Int> = memory.map { it }
-    private val initialInput: List<Int> = input.map { it }
+    private val initialMemory: List<Long> = memory.map { it }
+    private val initialInput: List<Long> = input.map { it }
 
     override fun run() {
         execute()
@@ -22,6 +29,7 @@ class IntcodeState(
         input.clear()
         input.addAll(initialInput)
         pointer = 0
+        relativeBase = 0
         output.clear()
         stop = false
     }
@@ -63,41 +71,43 @@ class IntcodeState(
         return parameters
     }
 
-    fun getParameter(parameter: Parameter): Int {
+    fun getParameter(parameter: Parameter): Long {
         return getValue(pointer + parameter.position, parameter.mode)
     }
 
-    fun setParameter(parameter: Parameter, value: Int) {
+    fun setParameter(parameter: Parameter, value: Long) {
         setValue(pointer + parameter.position, value, parameter.mode)
     }
 
-    fun read(): Int {
+    fun read(): Long {
         return input.take()
     }
 
-    fun write(value: Int) {
+    fun write(value: Long) {
         output.add(value)
     }
 
-    private fun getValue(pointer: Int, mode: ParameterMode): Int {
+    private fun getValue(pointer: Int, mode: ParameterMode): Long {
         return when (mode) {
-            ParameterMode.Position -> getValue(getValue(pointer))
+            ParameterMode.Position -> getValue(getValue(pointer).toInt())
             ParameterMode.Immediate -> getValue(pointer)
+            ParameterMode.Relative -> getValue(relativeBase + getValue(pointer).toInt())
         }
     }
 
-    private fun getValue(pointer: Int): Int {
+    private fun getValue(pointer: Int): Long {
         return memory[pointer]
     }
 
-    private fun setValue(pointer: Int, value: Int, mode: ParameterMode) {
+    private fun setValue(pointer: Int, value: Long, mode: ParameterMode) {
         when (mode) {
-            ParameterMode.Position -> setValue(getValue(pointer), value)
+            ParameterMode.Position -> setValue(getValue(pointer).toInt(), value)
             ParameterMode.Immediate -> setValue(pointer, value)
+            ParameterMode.Relative -> setValue(relativeBase + getValue(pointer).toInt(), value)
         }
     }
 
-    private fun setValue(pointer: Int, value: Int) {
+    private fun setValue(pointer: Int, value: Long) {
         memory[pointer] = value
     }
 }
@@ -106,13 +116,15 @@ data class Parameter(val position: Int, val mode: ParameterMode)
 
 enum class ParameterMode {
     Position,
-    Immediate;
+    Immediate,
+    Relative;
 
     companion object {
         fun fromValue(mode: Int): ParameterMode {
             return when (mode) {
                 0 -> Position
                 1 -> Immediate
+                2 -> Relative
                 else -> throw Exception("Unknown parameter mode: $mode")
             }
         }
@@ -143,6 +155,7 @@ abstract class Operation(private val opcode: Int, val parameters: List<Parameter
                 JumpIfFalse.OPCODE -> JumpIfFalse.build(state)
                 LessThan.OPCODE -> LessThan.build(state)
                 Equals.OPCODE -> Equals.build(state)
+                RelativeBase.OPCODE -> RelativeBase.build(state)
                 Halt.OPCODE -> Halt.build(state)
                 else -> throw Exception("New opcode found: $opcode")
             }
@@ -230,8 +243,8 @@ class JumpIfTrue(parameters: List<Parameter>) : Operation(OPCODE, parameters) {
 
     override fun executeOperation(state: IntcodeState): Int {
         val value = state.getParameter(parameters[0])
-        return if (value != 0) {
-            val newPointer = state.getParameter(parameters[1])
+        return if (value != 0L) {
+            val newPointer = state.getParameter(parameters[1]).toInt()
             newPointer - state.pointer
         } else {
             PARAMETERS + 1
@@ -252,8 +265,8 @@ class JumpIfFalse(parameters: List<Parameter>) : Operation(OPCODE, parameters) {
 
     override fun executeOperation(state: IntcodeState): Int {
         val value = state.getParameter(parameters[0])
-        return if (value == 0) {
-            val newPointer = state.getParameter(parameters[1])
+        return if (value == 0L) {
+            val newPointer = state.getParameter(parameters[1]).toInt()
             newPointer - state.pointer
         } else {
             PARAMETERS + 1
@@ -275,7 +288,7 @@ class LessThan(parameters: List<Parameter>) : Operation(OPCODE, parameters) {
     override fun executeOperation(state: IntcodeState): Int {
         val a = state.getParameter(parameters[0])
         val b = state.getParameter(parameters[1])
-        val value = if (a < b) 1 else 0
+        val value = if (a < b) 1L else 0L
         state.setParameter(parameters[2], value)
         return PARAMETERS + 1
     }
@@ -295,7 +308,7 @@ class Equals(parameters: List<Parameter>) : Operation(OPCODE, parameters) {
     override fun executeOperation(state: IntcodeState): Int {
         val a = state.getParameter(parameters[0])
         val b = state.getParameter(parameters[1])
-        val value = if (a == b) 1 else 0
+        val value = if (a == b) 1L else 0L
         state.setParameter(parameters[2], value)
         return PARAMETERS + 1
     }
@@ -306,6 +319,23 @@ class Equals(parameters: List<Parameter>) : Operation(OPCODE, parameters) {
 
         fun build(state: IntcodeState): Equals {
             return Equals(state.getParameters(PARAMETERS))
+        }
+    }
+}
+
+class RelativeBase(parameters: List<Parameter>) : Operation(OPCODE, parameters) {
+
+    override fun executeOperation(state: IntcodeState): Int {
+        state.relativeBase += state.getParameter(parameters[0]).toInt()
+        return PARAMETERS + 1
+    }
+
+    companion object {
+        const val OPCODE = 9
+        private const val PARAMETERS = 1
+
+        fun build(state: IntcodeState): RelativeBase {
+            return RelativeBase(state.getParameters(PARAMETERS))
         }
     }
 }
