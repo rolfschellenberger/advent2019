@@ -14,7 +14,6 @@ fun main() {
 
 class Day07 : Day() {
     override fun solve1(lines: List<String>) {
-        return
         val memory = splitLine(lines.first(), ",").map { it.toInt() }
         var maxOutput = Int.MIN_VALUE
 
