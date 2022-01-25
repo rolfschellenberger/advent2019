@@ -1,9 +1,6 @@
 package com.rolf.util
 
-import kotlin.math.abs
-import kotlin.math.cos
-import kotlin.math.roundToInt
-import kotlin.math.sin
+import kotlin.math.*
 
 data class Point(val x: Int, val y: Int) : Comparable<Point> {
     fun rotateRight(xLength: Int, yLength: Int, angleDegrees: Double): Point {
@@ -13,6 +10,11 @@ data class Point(val x: Int, val y: Int) : Comparable<Point> {
         val newX = centerX + (x - centerX) * cos(radians) - (y - centerY) * sin(radians);
         val newY = centerY + (x - centerX) * sin(radians) + (y - centerY) * cos(radians);
         return Point(newX.roundToInt(), newY.roundToInt())
+    }
+
+    // This is the angle compared to the x-axis, ranging from 0 to 360
+    fun angleBetween(other: Point): Double {
+        return (Math.toDegrees(atan2(other.y - y.toDouble(), other.x - x.toDouble())) + 360) % 360
     }
 
     fun distance(other: Point): Int {
