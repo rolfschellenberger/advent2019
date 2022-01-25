@@ -34,7 +34,7 @@ class IntcodeState(
         stop = false
     }
 
-    private fun isDone(): Boolean {
+    fun isDone(): Boolean {
         return pointer >= memory.size || stop
     }
 
