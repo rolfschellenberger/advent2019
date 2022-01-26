@@ -80,9 +80,7 @@ class IntcodeState(
     }
 
     fun read(): Long {
-        val value = input.take()
-        println("reading $value")
-        return value
+        return input.take()
     }
 
     fun write(value: Long) {

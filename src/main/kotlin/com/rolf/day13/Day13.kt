@@ -4,7 +4,6 @@ import com.rolf.Day
 import com.rolf.util.IntcodeState
 import com.rolf.util.MatrixString
 import com.rolf.util.readMemory
-import java.lang.Thread.sleep
 
 fun main() {
     Day13().run()
@@ -26,32 +25,26 @@ class Day13 : Day() {
         val intcodeState = IntcodeState(memory)
         Thread(intcodeState).start()
 
-        var ballX = 0
         var paddleX = 0
         var score = 0
         while (!intcodeState.isDone()) {
-            while (intcodeState.output.peek() == null) sleep(10)
-            val x = intcodeState.output.take().toInt()
-            while (intcodeState.output.peek() == null) sleep(10)
-            val y = intcodeState.output.take().toInt()
-            while (intcodeState.output.peek() == null) sleep(10)
-            val tileId = intcodeState.output.take().toInt()
-            println("($x, $y) = $tileId")
-            when (tileId) {
-                3 -> paddleX = x
-                4 -> ballX = x
-            }
-            if (x == -1 && y == 0) {
-                score = tileId
-                // Since score is the last output, now we send the joystick position
-                val direction = ballX.compareTo(paddleX)
-                println("write $direction")
-                intcodeState.input.put(direction.toLong())
-                println("score $score")
+            if (intcodeState.output.peek() != null) {
+                val x = intcodeState.output.take().toInt()
+                val y = intcodeState.output.take().toInt()
+                val tileId = intcodeState.output.take().toInt()
+                when (tileId) {
+                    3 -> paddleX = x
+                    4 -> {
+                        val direction = x.compareTo(paddleX)
+                        intcodeState.input.add(direction.toLong())
+                    }
+                }
+                if (x == -1 && y == 0) {
+                    score = tileId
+                }
             }
         }
         println(score)
-        // 11991
     }
 
     private fun buildGrid(intcodeState: IntcodeState): MatrixString {
