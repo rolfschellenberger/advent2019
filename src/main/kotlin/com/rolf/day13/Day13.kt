@@ -16,7 +16,7 @@ class Day13 : Day() {
         val intcodeState = IntcodeState(memory)
         intcodeState.execute()
 
-        val (grid, _) = buildGrid(intcodeState)
+        val grid = buildGrid(intcodeState)
         println(grid.count("+"))
     }
 
@@ -26,42 +26,48 @@ class Day13 : Day() {
         val intcodeState = IntcodeState(memory)
         Thread(intcodeState).start()
 
-        var highScore = 0
+        var ballX = 0
+        var paddleX = 0
+        var score = 0
         while (!intcodeState.isDone()) {
-            sleep(100)
-            val (grid, score) = buildGrid(intcodeState)
-            val ball = grid.find("o").first()
-            val paddle = grid.find("-").first()
-            highScore = maxOf(highScore, score)
-            val direction = ball.x.compareTo(paddle.x)
-            val remaining = grid.count("+")
-//            println(grid)
-            println("left: $remaining | direction: $direction | score: $highScore ")
-            intcodeState.input.add(direction.toLong())
+            while (intcodeState.output.peek() == null) sleep(10)
+            val x = intcodeState.output.take().toInt()
+            while (intcodeState.output.peek() == null) sleep(10)
+            val y = intcodeState.output.take().toInt()
+            while (intcodeState.output.peek() == null) sleep(10)
+            val tileId = intcodeState.output.take().toInt()
+            println("($x, $y) = $tileId")
+            when (tileId) {
+                3 -> paddleX = x
+                4 -> ballX = x
+            }
+            if (x == -1 && y == 0) {
+                score = tileId
+                // Since score is the last output, now we send the joystick position
+                val direction = ballX.compareTo(paddleX)
+                println("write $direction")
+                intcodeState.input.put(direction.toLong())
+                println("score $score")
+            }
         }
-        println(highScore)
+        println(score)
         // 11991
     }
 
-    private fun buildGrid(intcodeState: IntcodeState): Pair<MatrixString, Int> {
+    private fun buildGrid(intcodeState: IntcodeState): MatrixString {
         val grid = MatrixString.buildDefault(42, 23, " ")
-        var score = 0
         for ((x, y, tileId) in intcodeState.output.map { it.toInt() }.chunked(3)) {
-            if (x == -1 && y == 0) {
-                score = tileId
-            } else {
-                grid.set(
-                    x, y, when (tileId) {
-                        0 -> " " // empty
-                        1 -> "#" // wall
-                        2 -> "+" // block
-                        3 -> "-" // paddle
-                        4 -> "o" // ball
-                        else -> throw Exception("Unknown tile: $tileId")
-                    }
-                )
-            }
+            grid.set(
+                x, y, when (tileId) {
+                    0 -> " " // empty
+                    1 -> "#" // wall
+                    2 -> "+" // block
+                    3 -> "-" // paddle
+                    4 -> "o" // ball
+                    else -> throw Exception("Unknown tile: $tileId")
+                }
+            )
         }
-        return grid to score
+        return grid
     }
 }

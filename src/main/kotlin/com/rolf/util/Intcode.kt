@@ -14,8 +14,7 @@ class IntcodeState(
     val output: LinkedBlockingQueue<Long> = LinkedBlockingQueue(mutableListOf()),
     var pointer: Int = 0,
     var relativeBase: Int = 0,
-    var stop: Boolean = false,
-    var reading: Boolean = false
+    var stop: Boolean = false
 ) : Runnable {
     private val initialMemory: List<Long> = memory.map { it }
     private val initialInput: List<Long> = input.map { it }
@@ -33,7 +32,6 @@ class IntcodeState(
         relativeBase = 0
         output.clear()
         stop = false
-        reading = false
     }
 
     fun isDone(): Boolean {
@@ -82,10 +80,9 @@ class IntcodeState(
     }
 
     fun read(): Long {
-        reading = true
-        val input = input.take()
-        reading = false
-        return input
+        val value = input.take()
+        println("reading $value")
+        return value
     }
 
     fun write(value: Long) {
