@@ -1,7 +1,6 @@
 package com.rolf.day14
 
 import com.rolf.Day
-import kotlin.math.ceil
 
 fun main() {
     Day14().run()
@@ -10,41 +9,45 @@ fun main() {
 class Day14 : Day() {
     override fun solve1(lines: List<String>) {
         val reactions = lines.map { parseReaction(it) }
-        reactions.forEach { println(it) }
+//        reactions.forEach { println(it) }
         val outputMap = reactions.associateBy { it.output.name }
-        val fuel = outputMap.getValue("FUEL")
 
-        val requirements: MutableMap<Material, Int> = mutableMapOf()
-
-
-        val oreRequirement: MutableMap<Material, Double> = mutableMapOf()
-        findORE(outputMap, fuel, fuel.output.amount.toDouble(), oreRequirement)
-        println(oreRequirement)
-
-        var sum = 0.0
-        for ((output, amount) in oreRequirement) {
-            val ore = outputMap.getValue(output.name)
-            sum += ceil(amount / ore.output.amount) * ore.output.amount
-        }
-        println(sum)
+        val usedMaterials = mutableMapOf<String, Int>()
+        produceMaterial(outputMap, "FUEL", 1, usedMaterials)
+        println(usedMaterials.getValue("ORE"))
     }
 
-    private fun findORE(
+    private fun produceMaterial(
         outputMap: Map<String, Reaction>,
-        reaction: Reaction,
-        amount: Double,
-        oreRequirement: MutableMap<Material, Double>
+        material: String,
+        // TODO: how much to produce?
+        amount: Int,
+        usedMaterials: MutableMap<String, Int>,
+        availableMaterials: MutableMap<String, Int> = mutableMapOf()
     ) {
-        for (input in reaction.input) {
-            if (outputMap.containsKey(input.name)) {
-                val factor = input.amount / amount
-                findORE(outputMap, outputMap.getValue(input.name), factor, oreRequirement)
-            } else {
-                // We ended up with ORE and should log the amount
-                val value = oreRequirement.computeIfAbsent(reaction.output) { 0.0 } + amount
-                oreRequirement[reaction.output] = value
-            }
+        // When we want to produce some material, see if we have enough of this material to do so.
+        val available = availableMaterials.computeIfAbsent(material) { 0 }
+        if (available >= amount) {
+            availableMaterials[material] = available - amount
+            return
         }
+
+        // When ORE is required, we can just produce it
+        if (material == "ORE") {
+            val used = usedMaterials.computeIfAbsent("ORE") { 0 }
+            usedMaterials["ORE"] = used + amount
+            // We don't need to add it to the availableMaterials, since it will be used directly
+//            availableMaterials["ORE"] = available + amount
+            return
+        }
+
+        // If the there isn't enough available, we need to produce it.
+        val reaction = outputMap.getValue(material)
+        // We need to register the production of each material.
+            for (input in reaction.input) {
+                produceMaterial(outputMap, input, usedMaterials, availableMaterials)
+            }
+            // When all input is produced,
     }
 
     private fun parseReaction(line: String): Reaction {
@@ -65,4 +68,8 @@ class Day14 : Day() {
 
 data class Material(val name: String, val amount: Int)
 
-data class Reaction(val output: Material, val input: List<Material>)
+data class Reaction(val output: Material, val input: List<Material>) {
+    fun fromOre(): Boolean {
+        return input.count { it.name == "ORE" } > 0
+    }
+}
