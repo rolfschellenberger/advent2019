@@ -80,7 +80,12 @@ class IntcodeState(
     }
 
     fun read(): Long {
-        return input.take()
+        return try {
+            input.take()
+        } catch (_: InterruptedException) {
+            stop = true
+            0
+        }
     }
 
     fun write(value: Long) {
