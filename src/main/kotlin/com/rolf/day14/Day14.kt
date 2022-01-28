@@ -1,6 +1,7 @@
 package com.rolf.day14
 
 import com.rolf.Day
+import kotlin.math.ceil
 
 fun main() {
     Day14().run()
@@ -9,21 +10,36 @@ fun main() {
 class Day14 : Day() {
     override fun solve1(lines: List<String>) {
         val reactions = lines.map { parseReaction(it) }
-//        reactions.forEach { println(it) }
         val outputMap = reactions.associateBy { it.output.name }
 
-        val usedMaterials = mutableMapOf<String, Int>()
+        val usedMaterials = mutableMapOf<String, Long>()
         produceMaterial(outputMap, "FUEL", 1, usedMaterials)
         println(usedMaterials.getValue("ORE"))
+    }
+
+    override fun solve2(lines: List<String>) {
+        val reactions = lines.map { parseReaction(it) }
+        val outputMap = reactions.associateBy { it.output.name }
+
+        var fuelAmount = 0
+        for (i in 1180000 until 10000000) {
+            val usedMaterials = mutableMapOf<String, Long>()
+            produceMaterial(outputMap, "FUEL", i.toLong(), usedMaterials)
+            val ore = usedMaterials.getValue("ORE")
+            if (ore > 1000000000000) {
+                break
+            }
+            fuelAmount = i
+        }
+        println(fuelAmount)
     }
 
     private fun produceMaterial(
         outputMap: Map<String, Reaction>,
         material: String,
-        // TODO: how much to produce?
-        amount: Int,
-        usedMaterials: MutableMap<String, Int>,
-        availableMaterials: MutableMap<String, Int> = mutableMapOf()
+        amount: Long,
+        usedMaterials: MutableMap<String, Long>,
+        availableMaterials: MutableMap<String, Long> = mutableMapOf()
     ) {
         // When we want to produce some material, see if we have enough of this material to do so.
         val available = availableMaterials.computeIfAbsent(material) { 0 }
@@ -36,18 +52,23 @@ class Day14 : Day() {
         if (material == "ORE") {
             val used = usedMaterials.computeIfAbsent("ORE") { 0 }
             usedMaterials["ORE"] = used + amount
-            // We don't need to add it to the availableMaterials, since it will be used directly
-//            availableMaterials["ORE"] = available + amount
             return
         }
 
         // If the there isn't enough available, we need to produce it.
         val reaction = outputMap.getValue(material)
-        // We need to register the production of each material.
-            for (input in reaction.input) {
-                produceMaterial(outputMap, input, usedMaterials, availableMaterials)
-            }
-            // When all input is produced,
+        // Round up, since we cannot run partial reactions
+        val toProduce = amount - available
+        val factor = ceil(toProduce.toDouble() / reaction.output.amount).toLong()
+        val productionAmount = factor * reaction.output.amount
+        for (input in reaction.input) {
+            produceMaterial(outputMap, input.name, factor * input.amount, usedMaterials, availableMaterials)
+        }
+        // We need to register the production of this material.
+        usedMaterials[material] = usedMaterials.computeIfAbsent(material) { 0 } + productionAmount
+        // When all input is produced, log what is left after using the amount
+        val availableNow = availableMaterials.computeIfAbsent(material) { 0 }
+        availableMaterials[material] = availableNow + (productionAmount - amount)
     }
 
     private fun parseReaction(line: String): Reaction {
@@ -61,15 +82,8 @@ class Day14 : Day() {
         val (amount, name) = line.split(" ")
         return Material(name, amount.toInt())
     }
-
-    override fun solve2(lines: List<String>) {
-    }
 }
 
 data class Material(val name: String, val amount: Int)
 
-data class Reaction(val output: Material, val input: List<Material>) {
-    fun fromOre(): Boolean {
-        return input.count { it.name == "ORE" } > 0
-    }
-}
+data class Reaction(val output: Material, val input: List<Material>)
