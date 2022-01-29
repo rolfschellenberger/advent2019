@@ -10,32 +10,45 @@ fun main() {
 class Day17 : Day() {
     override fun solve1(lines: List<String>) {
         val grid = buildGrid(lines)
-        val alignment = grid.allPoints().map {
-            it to grid.getNeighbours(it, diagonal = false)
-        }.filter {
-            it.second.all { grid.get(it) == "#" }
-        }.map { it.first }
-            .map { it.x * it.y }
-            .sum()
+        val alignment = grid.allPoints().map { it to grid.getNeighbours(it, diagonal = false) }
+            .filter { pair -> pair.second.all { grid.get(it) == "#" } }
+            .map { it.first }
+            .sumOf { it.x * it.y }
         println(alignment)
     }
 
     override fun solve2(lines: List<String>) {
         val grid = buildGrid(lines)
         val path = findPath(grid)
-        val chunks = path.chunked(20)
-        chunks.forEach { println(it) }
+        val routine = "A,B,B,A,C,A,C,A,C,B"
+        val a = "R,6,R,6,R,8,L,10,L,4"
+        val b = "R,6,L,10,R,8"
+        val c = "L,4,L,12,R,6,L,10"
         val memory = readMemory(lines.first(), 5000)
         val intcodeState = IntcodeState(memory)
         memory[0] = 2
         val thread = Thread(intcodeState)
         thread.start()
 
-        // Feed the pattern + the path chunks
-//        val MAX_LENGTH = 20
-//        println("A,A,B,C,B,C,B,C\n".map { it.code })
+        intcodeState.input.addAll(toASCII(routine))
+        intcodeState.input.addAll(toASCII(a))
+        intcodeState.input.addAll(toASCII(b))
+        intcodeState.input.addAll(toASCII(c))
+        intcodeState.input.addAll(toASCII("n"))
+
+        var lastOutput = 0L
+        while (!intcodeState.isDone()) {
+            while (intcodeState.output.peek() != null) {
+                lastOutput = intcodeState.output.take()
+            }
+        }
+        println(lastOutput)
 
         thread.interrupt()
+    }
+
+    private fun toASCII(input: String): Collection<Long> {
+        return (input + "\n").map { it.code.toLong() }
     }
 
     private fun buildGrid(lines: List<String>): MatrixString {
