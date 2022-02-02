@@ -12,6 +12,11 @@ data class Point(val x: Int, val y: Int) : Comparable<Point> {
         return Point(newX.roundToInt(), newY.roundToInt())
     }
 
+    fun left() = Point(x - 1, y)
+    fun right() = Point(x + 1, y)
+    fun up() = Point(x, y - 1)
+    fun down() = Point(x, y + 1)
+
     // This is the angle compared to the x-axis, ranging from 0 to 360
     fun angleBetween(other: Point): Double {
         return (Math.toDegrees(atan2(other.y - y.toDouble(), other.x - x.toDouble())) + 360) % 360
