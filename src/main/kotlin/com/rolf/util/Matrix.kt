@@ -309,12 +309,33 @@ open class Matrix<T>(internal val input: MutableList<MutableList<T>>) {
 
     fun findPathByValue(
         from: Point,
+        to: Point,
+        notAllowedValues: Set<T> = emptySet(),
+        diagonal: Boolean = false
+    ): List<Point> {
+        val notAllowedLocations = notAllowedValues.map { find(it) }.flatten().toSet()
+        val paths = findPaths(from, setOf(to), notAllowedLocations, diagonal, 1)
+        return if (paths.isNotEmpty()) paths.first() else emptyList()
+    }
+
+    fun findPathByValue(
+        from: Point,
         to: Set<Point>,
         notAllowedValues: Set<T> = emptySet(),
         diagonal: Boolean = false
     ): List<Point> {
         val notAllowedLocations = notAllowedValues.map { find(it) }.flatten().toSet()
         val paths = findPaths(from, to, notAllowedLocations, diagonal, 1)
+        return if (paths.isNotEmpty()) paths.first() else emptyList()
+    }
+
+    fun findPath(
+        from: Point,
+        to: Point,
+        notAllowedLocations: Set<Point> = emptySet(),
+        diagonal: Boolean = false
+    ): List<Point> {
+        val paths = findPaths(from, setOf(to), notAllowedLocations, diagonal, 1)
         return if (paths.isNotEmpty()) paths.first() else emptyList()
     }
 

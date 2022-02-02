@@ -1,172 +1,43 @@
 package com.rolf.day18
 
 import com.rolf.Day
-import com.rolf.util.MatrixString
-import com.rolf.util.Point
-import com.rolf.util.splitLines
 
 fun main() {
     Day18().run()
 }
 
-typealias Position = Pair<String, Point>
-
 class Day18 : Day() {
     override fun solve1(lines: List<String>) {
-//        val maze = Maze.from(lines)
-//        println(maze.minimumSteps())
-
-        val grid = MatrixString.build(splitLines(lines))
-        val start = grid.find("@").first()
-        val distance = travel(grid, start, mutableSetOf("c"))
-        println(distance)
-//        val keys = getKeys(grid)
-//        val doors = getDoors(grid)
-//        val path = travelPath(grid, start, keys, doors)
-//        println(path)
-        // 7758 too high
-        // 6718 too high
-        // 6689 too high
-        // 7308????
-    }
-
-    private fun travel(
-        grid: MatrixString,
-        location: Point,
-        keysCollected: Set<String> = setOf(),
-        cache: MutableMap<Pair<Point, Set<String>>, Int> = mutableMapOf()
-    ): Int {
-        val cacheKey = Pair(location, keysCollected)
-        if (cacheKey in cache) {
-            return cache.getValue(cacheKey)
-        }
-
-        val locations = locationsToTravel(grid, location, keysCollected)
-        println(keysCollected)
-        val distance = locations.map {
-            it.second.size + travel(grid, it.second.last(), keysCollected + it.first, cache)
-        }.minOrNull() ?: 0
-        cache[cacheKey] = distance
-        return distance
-    }
-
-    private fun locationsToTravel(
-        grid: MatrixString,
-        location: Point,
-        keysCollected: Set<String>
-    ): List<Pair<String, List<Point>>> {
-        // Return the key locations with the ending key value and the path
-        val locations = mutableListOf<Pair<String, List<Point>>>()
-
-        val keys = getKeyToTravel(grid, keysCollected)
-        val doors = getDoorsNotToTravel(grid, keysCollected)
-
-        // Find paths to every key
-        val paths = grid.findPathsByValue(location, keys.map { it.second }.toSet(), doors + "#", false)
-        return paths.map { grid.get(it.last()) to it }
-    }
-
-    private fun getKeyToTravel(grid: MatrixString, keysCollected: Set<String>): List<Position> {
-        return grid.allPoints()
-            .map { Position(grid.get(it), it) }
-            .filter { it.first.first() in 'a'..'z' }
-            .filterNot { it.first in keysCollected }
-    }
-
-    private fun getDoorsNotToTravel(grid: MatrixString, keysCollected: Set<String>): Set<String> {
-        return grid.allPoints()
-            .map { Position(grid.get(it), it) }
-            .filter { it.first.first() in 'A'..'Z' }
-            .filterNot { it.first.lowercase() in keysCollected }
-            .map { it.first }
-            .toSet()
-    }
-
-    private fun travelPath(
-        grid: MatrixString, location: Point, keys: Set<Point>, doors: Set<String>,
-        distance: Int = 0,
-        cache: MutableMap<Pair<Point, Set<Point>>, Int> = mutableMapOf()
-    ): Int {
-        if (keys.isEmpty()) {
-            return distance
-        }
-
-        val cacheKey = location to keys
-        if (cache.containsKey(cacheKey)) {
-            return distance + cache.getValue(cacheKey)
-        }
-
-        val value = grid.get(location)
-        val keyValues = keys.map { grid.get(it) }.toSet()
-        println("Traveling from $value")
-        println("Remaining keys: $keyValues")
-        val test = setOf("g", "n", "h", "d", "l", "o", "e", "p", "c", "i", "k", "m")
-        if (keyValues == test && value == "j") {
-            println("test!")
-        }
-        println("Remaining doors: $doors")
-        println("Distance: $distance")
-
-        val keysToCollect = getKeysToCollect(grid, location, keys, doors)
-//        val g = grid.copy()
-//        keysToCollect.forEachIndexed { index, path -> g.set(path.last(), index.toString()) }
-//        println(g)
-//        println()
-
-        var minDistance = Int.MAX_VALUE
-        for (keyToCollect in keysToCollect) {
-            val key = grid.get(keyToCollect.last())
-            val newKeys = keys - keyToCollect.last()
-            val newDoors = doors - key.uppercase()
-            val totalDistance =
-                travelPath(grid, keyToCollect.last(), newKeys, newDoors, keyToCollect.size, cache)
-//            println(totalDistance)
-            minDistance = minOf(minDistance, totalDistance)
-        }
-        cache[cacheKey] = minDistance
-        return distance + minDistance
-    }
-
-    private fun getKeysToCollect(
-        grid: MatrixString,
-        location: Point,
-        keys: Set<Point>,
-        doors: Set<String>
-    ): List<List<Point>> {
-        val toCollect = mutableListOf<List<Point>>()
-        val blockingValues = doors + "#"
-
-        for (key in keys) {
-            val path = grid.findPathByValue(location, key, blockingValues, diagonal = false)
-            if (path.isNotEmpty()) {
-                toCollect.add(path)
-            }
-        }
-        return toCollect.sortedBy { it.size }
-    }
-
-    private fun getDoors(grid: MatrixString): Set<String> {
-        return grid.allPoints()
-            .map { grid.get(it) }
-            .filter { it.first() in 'A'..'Z' }
-            .toSet()
-    }
-
-    private fun getKeys(grid: MatrixString): Set<Point> {
-        return grid.allPoints()
-            .filter { grid.get(it).first() in 'a'..'z' }
-            .toSet()
+        val maze = Maze.from(lines)
+        println(maze.minimumSteps())
     }
 
     override fun solve2(lines: List<String>) {
+        val maze = Maze.from(lines)
+        maze.openSpaces.remove(Point2D(39, 39))
+        maze.openSpaces.remove(Point2D(40, 39))
+        maze.openSpaces.remove(Point2D(41, 39))
+        maze.openSpaces.remove(Point2D(39, 40))
+        maze.openSpaces.remove(Point2D(41, 40))
+        maze.openSpaces.remove(Point2D(39, 41))
+        maze.openSpaces.remove(Point2D(40, 41))
+        maze.openSpaces.remove(Point2D(41, 41))
+
+        maze.starts.remove(Point2D(40, 40))
+        maze.starts.add(Point2D(39, 39))
+        maze.starts.add(Point2D(41, 39))
+        maze.starts.add(Point2D(39, 41))
+        maze.starts.add(Point2D(41, 41))
+
+        println(maze.minimumSteps())
     }
 }
 
 class Maze(
-    private val starts: Set<Point2D>,
+    val starts: MutableSet<Point2D>,
     private val keys: Map<Point2D, Char>,
     private val doors: Map<Point2D, Char>,
-    private val openSpaces: Set<Point2D>
+    val openSpaces: MutableSet<Point2D>
 ) {
 
     private fun findReachableKeys(from: Point2D, haveKeys: Set<Char> = mutableSetOf()): Map<Char, Pair<Point2D, Int>> {
