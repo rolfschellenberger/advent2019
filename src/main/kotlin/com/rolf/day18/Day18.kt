@@ -9,18 +9,21 @@ fun main() {
     Day18().run()
 }
 
+typealias Position = Pair<String, Point>
+
 class Day18 : Day() {
     override fun solve1(lines: List<String>) {
-        val maze = Maze.from(lines)
-        println(maze.minimumSteps())
+//        val maze = Maze.from(lines)
+//        println(maze.minimumSteps())
 
         val grid = MatrixString.build(splitLines(lines))
         val start = grid.find("@").first()
-        val keys = getKeys(grid)
-        val doors = getDoors(grid)
-        val distance = travel(grid, start)
-        val path = travelPath(grid, start, keys, doors)
-        println(path)
+        val distance = travel(grid, start, mutableSetOf("c"))
+        println(distance)
+//        val keys = getKeys(grid)
+//        val doors = getDoors(grid)
+//        val path = travelPath(grid, start, keys, doors)
+//        println(path)
         // 7758 too high
         // 6718 too high
         // 6689 too high
@@ -30,24 +33,53 @@ class Day18 : Day() {
     private fun travel(
         grid: MatrixString,
         location: Point,
-        keysCollected: Set<String>,
+        keysCollected: Set<String> = setOf(),
         cache: MutableMap<Pair<Point, Set<String>>, Int> = mutableMapOf()
     ): Int {
-        val cacheKey = Pair(start, keysCollected)
+        val cacheKey = Pair(location, keysCollected)
         if (cacheKey in cache) {
             return cache.getValue(cacheKey)
         }
 
-        locationsToTravel(grid, location, keysCollected)
+        val locations = locationsToTravel(grid, location, keysCollected)
+        println(keysCollected)
+        val distance = locations.map {
+            it.second.size + travel(grid, it.second.last(), keysCollected + it.first, cache)
+        }.minOrNull() ?: 0
+        cache[cacheKey] = distance
+        return distance
     }
 
-    private fun locationsToTravel(grid: MatrixString, location: Point, keysCollected: Set<String>) : List<Pair<String, List<Point>>> {
-        // Return the locations with the ending key value and the path
-        val locations = mutableList<Pair<String, List<Point>>>()
+    private fun locationsToTravel(
+        grid: MatrixString,
+        location: Point,
+        keysCollected: Set<String>
+    ): List<Pair<String, List<Point>>> {
+        // Return the key locations with the ending key value and the path
+        val locations = mutableListOf<Pair<String, List<Point>>>()
 
-        val keys = getKeuy
+        val keys = getKeyToTravel(grid, keysCollected)
+        val doors = getDoorsNotToTravel(grid, keysCollected)
 
-        return locations
+        // Find paths to every key
+        val paths = grid.findPathsByValue(location, keys.map { it.second }.toSet(), doors + "#", false)
+        return paths.map { grid.get(it.last()) to it }
+    }
+
+    private fun getKeyToTravel(grid: MatrixString, keysCollected: Set<String>): List<Position> {
+        return grid.allPoints()
+            .map { Position(grid.get(it), it) }
+            .filter { it.first.first() in 'a'..'z' }
+            .filterNot { it.first in keysCollected }
+    }
+
+    private fun getDoorsNotToTravel(grid: MatrixString, keysCollected: Set<String>): Set<String> {
+        return grid.allPoints()
+            .map { Position(grid.get(it), it) }
+            .filter { it.first.first() in 'A'..'Z' }
+            .filterNot { it.first.lowercase() in keysCollected }
+            .map { it.first }
+            .toSet()
     }
 
     private fun travelPath(

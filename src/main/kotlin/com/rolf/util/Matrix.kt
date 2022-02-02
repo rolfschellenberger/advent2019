@@ -309,21 +309,13 @@ open class Matrix<T>(internal val input: MutableList<MutableList<T>>) {
 
     fun findPathByValue(
         from: Point,
-        to: Point,
+        to: Set<Point>,
         notAllowedValues: Set<T> = emptySet(),
         diagonal: Boolean = false
     ): List<Point> {
-        val notAllowed = notAllowedValues.map { find(it) }.flatten().toSet()
-        return findPath(from, setOf(to), notAllowed, diagonal)
-    }
-
-    fun findPath(
-        from: Point,
-        to: Point,
-        notAllowedLocations: Set<Point> = emptySet(),
-        diagonal: Boolean = false
-    ): List<Point> {
-        return findPath(from, setOf(to), notAllowedLocations, diagonal)
+        val notAllowedLocations = notAllowedValues.map { find(it) }.flatten().toSet()
+        val paths = findPaths(from, to, notAllowedLocations, diagonal, 1)
+        return if (paths.isNotEmpty()) paths.first() else emptyList()
     }
 
     fun findPath(
@@ -332,6 +324,27 @@ open class Matrix<T>(internal val input: MutableList<MutableList<T>>) {
         notAllowedLocations: Set<Point> = emptySet(),
         diagonal: Boolean = false
     ): List<Point> {
+        val paths = findPaths(from, to, notAllowedLocations, diagonal, 1)
+        return if (paths.isNotEmpty()) paths.first() else emptyList()
+    }
+
+    fun findPathsByValue(
+        from: Point,
+        to: Set<Point>,
+        notAllowedValues: Set<T> = emptySet(),
+        diagonal: Boolean = false
+    ): List<List<Point>> {
+        val notAllowedLocations = notAllowedValues.map { find(it) }.flatten().toSet()
+        return findPaths(from, to, notAllowedLocations, diagonal)
+    }
+
+    fun findPaths(
+        from: Point,
+        to: Set<Point>,
+        notAllowedLocations: Set<Point> = emptySet(),
+        diagonal: Boolean = false,
+        maxResults: Int = Int.MAX_VALUE
+    ): List<List<Point>> {
         val paths: ArrayDeque<List<Point>> = ArrayDeque()
         val seen: MutableSet<Point> = mutableSetOf(from)
         seen.addAll(notAllowedLocations)
@@ -344,7 +357,9 @@ open class Matrix<T>(internal val input: MutableList<MutableList<T>>) {
         }
 
         fun getNeighbours(point: Point): List<Point> {
-            return getNeighbours(point, diagonal = diagonal).filter { isAllowed(it) }.sorted()
+            return getNeighbours(point, diagonal = diagonal)
+                .filter { isAllowed(it) }
+                .sorted()
         }
 
         // Start with the neighbours of the starting point that are allowed to visit.
@@ -352,13 +367,17 @@ open class Matrix<T>(internal val input: MutableList<MutableList<T>>) {
             paths.add(listOf(neighbour))
         }
 
+        val results: MutableList<List<Point>> = mutableListOf()
         while (paths.isNotEmpty()) {
             val path = paths.removeFirst()
             val pathEnd: Point = path.last()
 
             // Arrived at destination?
             if (to.contains(pathEnd)) {
-                return path
+                results.add(path)
+                if (results.size >= maxResults) {
+                    return results
+                }
             }
 
             // Continue only new locations
@@ -370,7 +389,7 @@ open class Matrix<T>(internal val input: MutableList<MutableList<T>>) {
                 }
             }
         }
-        return emptyList()
+        return results
     }
 
     open fun copy(): Matrix<T> {
