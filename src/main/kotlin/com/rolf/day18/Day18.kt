@@ -19,9 +19,9 @@ class Day18 : Day() {
         val doors = getDoorsOnGrid(grid)
 
         // Pre-compute paths from start or key to another key, returning the length + the required keys needed to get there
-        preComputePaths(grid, location, keys, doors)
+        preComputePaths(grid, listOf(location), keys, doors)
 
-        println(travel(State(location, emptySet()), keys))
+        println(travel(setOf(State(location, emptySet())), keys))
     }
 
     private fun getKeysOnGrid(grid: MatrixString): Set<Position> {
@@ -41,10 +41,10 @@ class Day18 : Day() {
     // Map with Pair(from -> to) to Pair(requiredKeys, distance)
     private val memory: MutableMap<Pair<Point, Point>, Pair<Set<String>, Int>> = mutableMapOf()
 
-    private fun preComputePaths(grid: MatrixString, location: Point, keys: Set<Position>, doors: Set<Position>) {
+    private fun preComputePaths(grid: MatrixString, locations: List<Point>, keys: Set<Position>, doors: Set<Position>) {
         val defaultBoard = buildDefaultBoard(grid, emptySet())
 
-        val list = keys.map { it.point } + location
+        val list = keys.map { it.point } + locations
         val permutations = getPermutations(list, 2)
         for ((from, to) in permutations) {
             val path = defaultBoard.findPathByValue(from, to, setOf("#"))
@@ -71,39 +71,42 @@ class Day18 : Day() {
 
     private fun canTravelTo(from: Point, to: Point, keys: Set<Position>): Boolean {
         val keysNeeded = memory.getValue(from to to).first
-        return keys.map { it.value }.containsAll(keysNeeded)
+        val path = memory.getValue(from to to).second
+        return path > 0 && keys.map { it.value }.containsAll(keysNeeded)
     }
 
     private fun travel(
-        state: State,
+        states: Set<State>,
         keysToCollect: Set<Position>,
-        cache: MutableMap<State, Int> = mutableMapOf()
+        cache: MutableMap<Set<State>, Int> = mutableMapOf()
     ): Int {
+        val allCollectedKeys = states.map { it.keys }.flatten().toSet()
         // When all keys are retrieved, return the distance traveled
-        if (state.keys.size == keysToCollect.size) {
+        if (allCollectedKeys.size == keysToCollect.size) {
             return 0
         }
 
-        if (cache.containsKey(state)) {
-            return cache.getValue(state)
+        if (cache.containsKey(states)) {
+            return cache.getValue(states)
         }
 
         // Travel to each key
         var minDistance = Int.MAX_VALUE
-        val from = state.location
-        for (key in keysToCollect - state.keys) {
-            // Can we travel to this location with our current key set?
-            val to = key.point
-            val collectedKeys = state.keys
-            if (canTravelTo(from, to, collectedKeys)) {
-                // When the key can be reached, open its door
-                val newState = State(key.point, state.keys + key)
-                val distance = getPathLength(from, key.point) + travel(newState, keysToCollect, cache)
-                minDistance = minOf(minDistance, distance)
+        for (state in states) {
+            val from = state.location
+            for (key in keysToCollect - allCollectedKeys) {
+                // Can we travel to this location with our current key set?
+                val to = key.point
+                if (canTravelTo(from, to, allCollectedKeys)) {
+                    val newState = State(key.point, state.keys + key)
+                    val distance =
+                        getPathLength(from, key.point) + travel(states - state + newState, keysToCollect, cache)
+                    minDistance = minOf(minDistance, distance)
+                }
             }
         }
+        cache[states] = minDistance
 
-        cache[state] = minDistance
         return minDistance
     }
 
@@ -119,14 +122,17 @@ class Day18 : Day() {
         grid.set(grid.getDown(location)!!, "#")
         grid.set(grid.getLeft(location)!!, "#")
         grid.set(grid.getRight(location)!!, "#")
-        println(grid)
+        val locations = grid.find("@")
         val keys = getKeysOnGrid(grid)
         val doors = getDoorsOnGrid(grid)
 
         // Pre-compute paths from start or key to another key, returning the length + the required keys needed to get there
-        preComputePaths(grid, location, keys, doors)
+        preComputePaths(grid, locations, keys, doors)
+        val states = locations.map {
+            State(it, emptySet())
+        }.toSet()
 
-        println(travel(State(location, emptySet()), keys))
+        println(travel(states, keys))
     }
 }
 

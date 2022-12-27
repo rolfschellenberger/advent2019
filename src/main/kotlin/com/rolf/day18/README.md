@@ -272,3 +272,5 @@ This example requires at least `_72_` steps to collect all keys.
 After updating your map and using the remote-controlled robots, _what is the fewest steps necessary to collect all of the keys?_
 
 Your puzzle answer was `2020`.
+
+Both parts of this puzzle are complete! They provide two gold stars: **
