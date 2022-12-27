@@ -13,7 +13,7 @@ class Day15 : Day() {
         val (thread, grid) = buildGrid(lines)
 
         val to = grid.find("X").first()
-        val path = grid.findPathByValue(grid.center(), setOf(to), setOf("#"), diagonal = false)
+        val path = grid.findPathByValue(grid.center(), to, setOf("#"), diagonal = false)
         println(path.size)
         thread.interrupt()
     }
@@ -25,7 +25,7 @@ class Day15 : Day() {
         var maxDistance = 0
         for (point in grid.allPoints()) {
             if (grid.get(point) == ".") {
-                val path = grid.findPathByValue(from, setOf(point), setOf("#"), diagonal = false)
+                val path = grid.findPathByValue(from, point, setOf("#"), diagonal = false)
                 maxDistance = maxOf(maxDistance, path.size)
             }
         }
