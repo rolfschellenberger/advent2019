@@ -42,6 +42,7 @@ class Day18 : Day() {
     private val memory: MutableMap<Pair<Point, Point>, Pair<Set<String>, Int>> = mutableMapOf()
 
     private fun preComputePaths(grid: MatrixString, locations: List<Point>, keys: Set<Position>, doors: Set<Position>) {
+        memory.clear()
         val defaultBoard = buildDefaultBoard(grid, emptySet())
 
         val list = keys.map { it.point } + locations
