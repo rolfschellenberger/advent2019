@@ -1,9 +1,7 @@
 package com.rolf.day20
 
 import com.rolf.Day
-import com.rolf.util.MatrixString
-import com.rolf.util.Point
-import com.rolf.util.splitLines
+import com.rolf.util.*
 
 fun main() {
     Day20().run()
@@ -11,79 +9,93 @@ fun main() {
 
 class Day20 : Day() {
     override fun solve1(lines: List<String>) {
-        println(606)
-        return
-        val grid = MatrixString.build(splitLines(lines))
-        val gates = getGates(grid)
-        val gatesByLocation = gates.associateBy { it.location }
-        val start = gates.first { it.value == "AA" }
-        val end = gates.first { it.value == "ZZ" }
+        val grid = buildGrid(lines)
+        val portals = findPortals(grid)
 
-        // Map all paths between gates
-        for (gate in gates) {
-            val paths = grid.findPathsByValue(gate.location, gates.map { it.location }.toSet(), setOf("#", " "))
-            for (path in paths) {
-                val endGate = gatesByLocation[path.last()]!!
-                val teleport = findTeleport(endGate, gates) ?: endGate // Use the end gate in case of A and Z
-                gate.connections.add(teleport to path.size)
+        // Build graph from each portal to each portal.
+        val graph = Graph<Void>()
+        portals.forEach { graph.addVertex(Vertex(it.name, weight = 1.0)) }
+        graph.addVertex(Vertex("AA", weight = 0.0))
+        graph.addVertex(Vertex("ZZ", weight = 0.0))
+        val permutations = getPermutations(portals, 2)
+        val notAllowedValues = ('A'..'Z').map { it.toString() }.toSet() + "#"
+
+        // Calculate all paths in the maze possible
+        val paths = mutableMapOf<Pair<Position, Position>, Int>()
+        for (permutation in permutations) {
+            // Add every edge
+            val from = permutation[0]
+            val to = permutation[1]
+
+            if (!paths.containsKey(from to to)) {
+                val path = grid.findPathByValue(from.point, to.point, notAllowedValues)
+                paths[from to to] = path.size
+                paths[to to from] = path.size
             }
         }
 
-        // Travel from A to Z and keep the smallest route
-        val distance = travel(start, end, gatesByLocation)
-        println(distance)
-        // 424 too low
+        // Add possible paths (distance > 0)
+        for ((path, distance) in paths.filter { it.value > 0 }) {
+            val from = path.first
+            val to = path.second
+            graph.addEdge(from.name, to.name, weight = distance.toDouble())
+        }
+
+        // Calculate the shortest path from AA to ZZ
+        println(graph.edges().size)
+        println(graph.shortestPathAndWeight("AA", "ZZ").second.toInt())
     }
 
-    private fun getGates(grid: MatrixString): List<Gate> {
-        // Iterate all points with a '.' to find the gate names around it
-        return grid.find(".")
-            .mapNotNull { getGate(grid, it) }
-    }
-
-    private fun getGate(grid: MatrixString, location: Point): Gate? {
-        // Inspect 2 locations in each direction
-        return listOfNotNull(
-            getGate(grid, location, location.left().left(), location.left()),
-            getGate(grid, location, location.right(), location.right().right()),
-            getGate(grid, location, location.up().up(), location.up()),
-            getGate(grid, location, location.down(), location.down().down())
-        ).firstOrNull()
-    }
-
-    private fun getGate(grid: MatrixString, location: Point, a: Point, b: Point): Gate? {
-        val one = if (grid.isOutside(a)) "." else grid.get(a)
-        val two = if (grid.isOutside(b)) "." else grid.get(b)
-        return if (isLetter(one) && isLetter(two)) Gate("$one$two", location) else null
-    }
-
-    private fun isLetter(value: String): Boolean {
-        return value.first() in 'A'..'Z'
-    }
-
-    private fun findTeleport(gate: Gate, gates: List<Gate>): Gate? {
-        for (other in gates) {
-            if (other != gate && other.value == gate.value) {
-                return other
+    private fun findPortals(grid: MatrixString): List<Position> {
+        // Check out all points. When a location has a letter and a neighbour contains also a letter and the
+        // opposite location contains a '.', remember the '.' as a portal location.
+        val portals = mutableListOf<List<Point>>()
+        // Read portal names from left to right or top to bottom
+        for (point in grid.allPoints()) {
+            if (isPortal(grid, point)) {
+                val left = grid.getLeft(point)
+                val right = grid.getRight(point)
+                if (isPortal(grid, left) && isOpen(grid, right)) {
+                    portals.add(listOf(right!!, left!!, point))
+                }
+                if (isPortal(grid, right) && isOpen(grid, left)) {
+                    portals.add(listOf(left!!, point, right!!))
+                }
+                val up = grid.getUp(point)
+                val down = grid.getDown(point)
+                if (isPortal(grid, up) && isOpen(grid, down)) {
+                    portals.add(listOf(down!!, up!!, point))
+                }
+                if (isPortal(grid, down) && isOpen(grid, up)) {
+                    portals.add(listOf(up!!, point, down!!))
+                }
             }
         }
-        return null
+        return portals.map {
+            Position(grid.get(it[1]) + grid.get(it[2]), it[0])
+        }
     }
 
-    private fun travel(
-        start: Gate,
-        end: Gate,
-        gatesByLocation: Map<Point, Gate>,
-        visited: Set<Gate> = mutableSetOf()
-    ): Int {
-        if (start == end) {
-            return -1 // Undo the jump to 'Z'
+    private fun isPortal(grid: MatrixString, point: Point?): Boolean {
+        return point != null && grid.get(point).first() in 'A'..'Z'
+    }
+
+    private fun isOpen(grid: MatrixString, point: Point?): Boolean {
+        return point != null && grid.get(point) == "."
+    }
+
+    private fun buildGrid(lines: List<String>): MatrixString {
+        val width = lines.maxOf { it.length }
+        val height = lines.size
+        val grid = MatrixString.buildDefault(width, height, " ")
+        val split = splitLines(lines)
+        for (y in split.indices) {
+            val line = split[y]
+            for (x in line.indices) {
+                grid.set(x, y, line[x])
+            }
         }
-        return gatesByLocation.getValue(start.location).connections
-            .filterNot { it.first in visited }
-            .minOfOrNull {
-                it.second + 1 + travel(it.first, end, gatesByLocation, visited + start)
-            } ?: 0
+        return grid
     }
 
     override fun solve2(lines: List<String>) {
@@ -91,27 +103,4 @@ class Day20 : Day() {
     }
 }
 
-class Gate(
-    val value: String,
-    val location: Point,
-    val connections: MutableList<Pair<Gate, Int>> = mutableListOf()
-) {
-    override fun toString(): String {
-        return "Gate(value='$value', location=$location, connections=${connections.map { it.first.value }})"
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as Gate
-
-        if (location != other.location) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        return location.hashCode()
-    }
-}
+data class Position(val name: String, val point: Point)
