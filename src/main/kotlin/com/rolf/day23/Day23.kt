@@ -62,9 +62,6 @@ class Day23 : Day() {
                 lastDelivered = nat
             }
         }
-        // 17599 too high
-        // 1754 too low
-        // 16424?
     }
 
     private fun parse(lines: List<String>): Pair<MutableMap<Int, IntcodeState>, MutableMap<Int, Thread>> {
