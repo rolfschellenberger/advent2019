@@ -18,6 +18,7 @@ class IntcodeState(
 ) : Runnable {
     private val initialMemory: List<Long> = memory.map { it }
     private val initialInput: List<Long> = input.map { it }
+    private var isReading = false
 
     override fun run() {
         execute()
@@ -32,10 +33,15 @@ class IntcodeState(
         relativeBase = 0
         output.clear()
         stop = false
+        isReading = false
     }
 
     fun isDone(): Boolean {
         return pointer >= memory.size || stop
+    }
+
+    fun isReading(): Boolean {
+        return isReading
     }
 
     fun execute() {
@@ -80,11 +86,14 @@ class IntcodeState(
     }
 
     fun read(): Long {
+        isReading = true
         return try {
             input.take()
         } catch (_: InterruptedException) {
             stop = true
             0
+        } finally {
+            isReading = false
         }
     }
 
