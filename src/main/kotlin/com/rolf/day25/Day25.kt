@@ -12,23 +12,42 @@ fun main() {
 
 class Day25 : Day() {
     override fun solve1(lines: List<String>) {
+        /*
+        [cake] too light
+        [coin] too light
+        [hypercube] too light
+        [pointer] too light
+        [tambourine] too light
+        [mug] too light
+        [monolith] too light
+        [mouse] too heavy
+        [infinite loop] x
+        [giant electromagnet] x
+        [photons] x
+        [escape pod] x
+        [molten lava] x
+         */
         val combinations = getCombinations(
             listOf(
-                "coin",
-                "mug",
                 "cake",
+                "coin",
                 "hypercube",
                 "pointer",
                 "tambourine",
+                "mug",
                 "monolith"
             )
         )
         val results = mutableMapOf<List<String>, String>()
         for (combination in combinations) {
             println("Trying $combination...")
-            results[combination] = walkMaze(lines, combination)
+            val result = walkMaze(lines, combination)
+            results[combination] = result
+            if (!result.contains("lighter") && !result.contains("heavier")) {
+                println(result)
+                break
+            }
         }
-        results.forEach { println(it) }
     }
 
     private fun walkMaze(lines: List<String>, pickUp: List<String>): String {
@@ -76,12 +95,11 @@ class Day25 : Day() {
 
         var lastResponse = ""
         while (!intcodeState.isDone()) {
-            Thread.sleep(100)
+            Thread.sleep(10)
             if (intcodeState.isReading()) {
                 val output = intcodeState.output.toList()
                 intcodeState.output.clear()
                 lastResponse = output.map { it.toInt().toChar() }.joinToString("")
-//                println(response)
 
                 // Items
                 if (lastResponse.contains("Items here:")) {
@@ -102,6 +120,10 @@ class Day25 : Day() {
             }
         }
         thread.interrupt()
+        // Return when successfully passed the last point
+        if (intcodeState.output.isNotEmpty()) {
+            return intcodeState.output.toList().map { it.toInt().toChar() }.joinToString("")
+        }
         return lastResponse
     }
 
